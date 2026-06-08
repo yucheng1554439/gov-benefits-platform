@@ -1,0 +1,18 @@
+{
+  "name": "gov-benefits-platform",
+  "private": true,
+  "scripts": {
+    "demo": "npm run demo:reset && playwright test tests/e2e/demo-recording.spec.ts --project=demo-recording",
+    "demo:reset": "powershell -ExecutionPolicy Bypass -File scripts/reset_demo_data.ps1",
+    "demo:seed": "powershell -ExecutionPolicy Bypass -File scripts/seed_demo_data.ps1",
+    "demo:install": "npm install && npx playwright install chromium",
+    "screenshots": "npm run demo:seed && playwright test tests/e2e/portfolio-screenshots.spec.ts --project=portfolio-screenshots",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3"
+  }
+}

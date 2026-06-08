@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gov-navy: #1e3a5f;
+  --gov-gold: #c9a227;
+}
+
+body {
+  @apply bg-gov-surface text-gov-navy antialiased;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-gov-gold;
+}
+
+.skip-link {
+  @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-gov-navy focus:px-4 focus:py-2 focus:text-white;
+}

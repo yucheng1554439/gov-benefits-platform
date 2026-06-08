@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+frontend/.next/
+frontend/out/
+
+# Go
+backend/bin/
+backend/coverage.out
+*.exe
+*.test
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Local upload / runtime data (not application source)
+/storage/
+/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log

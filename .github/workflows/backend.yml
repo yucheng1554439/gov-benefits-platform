@@ -1,0 +1,86 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: govbenefits
+          POSTGRES_PASSWORD: govbenefits
+          POSTGRES_DB: govbenefits
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U govbenefits"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: backend/go.sum
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
+
+      - name: Lint
+        run: golangci-lint run ./...
+
+      - name: Unit tests
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Build API
+        run: go build -o bin/api ./cmd/api
+
+      - name: Build Worker
+        run: go build -o bin/worker ./cmd/worker
+
+      - name: Integration tests
+        env:
+          DATABASE_URL: postgres://govbenefits:govbenefits@localhost:5432/govbenefits?sslmode=disable
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci-test-jwt-secret
+          STORAGE_DRIVER: local
+          LOCAL_STORAGE_PATH: /tmp/govbenefits-storage
+        run: go test -tags=integration -race ./tests/integration/...
+
+      - name: Build API Docker image
+        run: docker build -t gov-benefits-api:${{ github.sha }} -f ../infra/docker/Dockerfile.backend ..
+        working-directory: backend
+
+      - name: Build Worker Docker image
+        run: docker build -t gov-benefits-worker:${{ github.sha }} -f ../infra/docker/Dockerfile.worker ..
+        working-directory: backend
+
+      - name: Trivy scan API
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: gov-benefits-api:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: '0'

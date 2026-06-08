@@ -1,0 +1,194 @@
+openapi: 3.1.0
+info:
+  title: Government Benefits Platform API
+  version: 1.0.0
+  description: REST API for multi-tenant government benefits case management
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    AgencyHeader:
+      name: X-Agency-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      security: []
+      summary: Liveness check
+      responses:
+        '200':
+          description: OK
+
+  /auth/login:
+    post:
+      security: []
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: JWT tokens
+
+  /auth/register:
+    post:
+      security: []
+      summary: Register citizen
+      responses:
+        '201':
+          description: Created
+
+  /auth/me:
+    get:
+      summary: Current user profile
+      responses:
+        '200':
+          description: User with roles and agencies
+
+  /applications:
+    post:
+      summary: Submit application
+      responses:
+        '201':
+          description: Case created
+
+  /cases:
+    get:
+      summary: List cases with filters
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: program
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Paginated case list
+
+  /cases/{id}:
+    get:
+      summary: Case detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Case with timeline
+
+  /cases/{id}/status:
+    patch:
+      summary: Workflow transition
+      responses:
+        '200':
+          description: Updated
+
+  /cases/{id}/eligibility:
+    get:
+      summary: Run eligibility evaluation
+      responses:
+        '200':
+          description: Evaluation result
+
+  /cases/{id}/benefit/calculate:
+    post:
+      summary: Calculate benefit amount
+      responses:
+        '200':
+          description: Benefit calculation
+
+  /cases/{id}/appeal:
+    post:
+      summary: File appeal
+      responses:
+        '201':
+          description: Appeal filed
+
+  /appeals:
+    get:
+      summary: Appeal review queue
+      responses:
+        '200':
+          description: Appeals list
+
+  /sla/dashboard:
+    get:
+      summary: SLA compliance KPIs
+      responses:
+        '200':
+          description: Compliance metrics
+
+  /analytics/dashboard:
+    get:
+      summary: Leadership dashboard KPIs
+      responses:
+        '200':
+          description: Analytics data
+
+  /analytics/geography:
+    get:
+      summary: Geographic analytics by ZIP
+      responses:
+        '200':
+          description: Geo data
+
+  /reports/generate:
+    post:
+      summary: Queue report generation
+      responses:
+        '202':
+          description: Report queued
+
+  /admin/feature-flags:
+    get:
+      summary: List feature flags
+      responses:
+        '200':
+          description: Flags
+    patch:
+      summary: Toggle feature flag
+      responses:
+        '200':
+          description: Updated
+
+  /admin/retention-policies:
+    get:
+      summary: List retention policies
+      responses:
+        '200':
+          description: Policies
+
+  /notifications:
+    get:
+      summary: In-app notifications
+      responses:
+        '200':
+          description: Notification list

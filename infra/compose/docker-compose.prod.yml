@@ -1,0 +1,61 @@
+# Production-oriented Docker Compose overlay.
+# Usage: docker compose -f infra/compose/docker-compose.yml -f infra/compose/docker-compose.prod.yml up -d --build
+#
+# Set secrets via .env file (never commit real values).
+
+services:
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-govbenefits}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-govbenefits}
+
+  redis:
+    restart: unless-stopped
+
+  minio:
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+
+  backend:
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      DATABASE_URL: postgres://${POSTGRES_USER:-govbenefits}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-govbenefits}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET:-govbenefits}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://benefits.example.gov}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://${POSTGRES_USER:-govbenefits}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-govbenefits}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: s3
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET:-govbenefits}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION:-us-east-1}
+
+  frontend:
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api/v1}
